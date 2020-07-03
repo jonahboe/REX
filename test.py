@@ -26,8 +26,6 @@ while True:
           else:
                print("Latitude:", data[3], data[4])
                print("Longitude:", data[5], data[6])
-               # print("Speed: ", data[7],)
-               # print("Course: ", data[8], '\n')
 
      except:
           print("There was an error.\n")
