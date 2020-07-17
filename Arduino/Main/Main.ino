@@ -1,3 +1,6 @@
+#include <avr/wdt.h>
+#include <Stepper.h>
+
 #define STOP 0
 #define SEND_COMP 1
 #define TRACK_ON 2
@@ -6,10 +9,12 @@
 #define SPD_RANGE_UPPER 256
 #define SPD_RANGE_LOWER 100
 
-#define LEFT_F_PIN 11
+#define LEFT_F_PIN 9
 #define LEFT_B_PIN 10
-#define RIGHT_F_PIN 9
-#define RIGHT_B_PIN 6
+#define RIGHT_F_PIN 3
+#define RIGHT_B_PIN 5
+
+#define CONVEYOR_PIN 11
 
 #define STEP1 5
 #define STEP2 4
@@ -17,112 +22,74 @@
 #define STEP4 2
 #define STEP_REV 2000
 
-#include <Stepper.h>
+#define NORMAL_SPD 50
+#define TURN_OFFSET 25
 
 Stepper track(STEP_REV, STEP1, STEP2, STEP3, STEP4); 
-char data = 0;
+char Data = 0;
+char spR = 0;
+char spL = 0;
+
 bool isTrackOn = false;
-bool isNewData = false;
 
 void setup() {
+  Serial.begin(9600);
+  delay(500);
+  Serial.write(0x55);
 
+  motorStop();
+
+  //wdt_disable();
 }
 
 void loop() {
 
-  if(isNewData)
-    decodeData();
-  
-  if (isTrackOn)
-    track.step(10);
-}
-
-void decodeData()
-{
-   switch (data)
+  if (!Serial.available())
   {
-    case 0: 
-      motorsstop();
-    break;
-    case 1: 
-      sendcompass();
-    break;
-    case 2: 
-      isTrackOn = true;
-    break;
-    case 3: 
-      isTrackOn = false;
-    break;
-    case 4: 
-      //AVAILABLE TASK 1
-    break;
-    case 5:
-      //AVAILABLE TASK 2
-    break;
-    case 6: 
-      //AVAILABLE TASK 3
-    break;
-    case 7: 
-      //AVAILABLE TASK 4
-    break;
-    default:
-      setMotorSpeed();
-    break;
+    Data = Serial.read();
+    delay(200);
+    Serial.write(0x55);
+    delay(200);
   }
+  else
+    Data = 0;
+
+  // No ball was found
+  if(Data == 0)
+  {
+    spL = NORMAL_SPD;
+    spR = NORMAL_SPD;
+  }
+  // Ball found (left to right is mapped to 1-5 respectivly)
+  else
+  {
+    spL = NORMAL_SPD + (Data > 3) * TURN_OFFSET 
+                     + (Data > 4) * TURN_OFFSET;
+    
+    spR = NORMAL_SPD + (Data < 3) * TURN_OFFSET 
+                     + (Data < 2) * TURN_OFFSET;
+
+    if (!isTrackOn)
+    {
+      analogWrite(CONVEYOR_PIN, 100);
+      isTrackOn = true;
+      //wdt_enable(WDTO_8S);
+    }
+  }
+
+  motorsOn();
 }
 
-void motorsstop()
+void motorsOn()
+{
+  analogWrite(LEFT_F_PIN, spL);
+  analogWrite(RIGHT_F_PIN, spR);
+}
+
+void motorStop()
 {
   analogWrite(LEFT_F_PIN, 0);
   analogWrite(LEFT_B_PIN, 0);
   analogWrite(RIGHT_F_PIN, 0);
   analogWrite(RIGHT_B_PIN, 0);
-}
-
-void sendcompass()
-{
-  //INSERT SERIAL SEND COMPASS DATA
-}
-
-// Motor Speed Code Ranges
-// Left [8,131]
-//   Forward [8,69]
-//   Backward [70, 131]
-//
-// Right [132, 255]
-//   Forward [132,193] 
-//   Backward [194, 255]
-void setMotorSpeed()
-{
-  char spd;
-  if(data>=131) //left motor
-  {
-    if (data >= 69) //left forward
-    {
-      spd = map(data, 8, 69, SPD_RANGE_LOWER, SPD_RANGE_UPPER);
-      analogWrite(LEFT_F_PIN, spd); 
-      analogWrite(LEFT_B_PIN, 0);     
-    }
-    else  //left backward
-    {
-      spd = map(data, 70, 131, SPD_RANGE_LOWER, SPD_RANGE_UPPER);
-      analogWrite(LEFT_F_PIN, 0);
-      analogWrite(LEFT_B_PIN, spd);
-    }
-  }
-  else  //right wire
-  {
-      if (data >= 193) //right forward
-    {
-      spd = map(data, 132, 193, SPD_RANGE_LOWER, SPD_RANGE_UPPER);
-      analogWrite(RIGHT_F_PIN, spd);
-      analogWrite(RIGHT_B_PIN, 0); 
-    }
-    else  //right backward
-    {
-      spd = map(data, 193, 255, SPD_RANGE_LOWER, SPD_RANGE_UPPER);
-      analogWrite(RIGHT_F_PIN, 0);
-      analogWrite(RIGHT_B_PIN, spd);
-    }
-  }
 }
