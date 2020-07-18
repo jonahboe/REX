@@ -14,7 +14,7 @@ print("Processing images: ")
 for i in range(0, 388):
     filePath = "DataCollector/" + str(i) + ".png"
 
-    print("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", filePath, end="")
+    print("\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b\b", filePath, end="")
 
     image = tf.keras.preprocessing.image.load_img(
         path=filePath,
