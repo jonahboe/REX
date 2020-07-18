@@ -14,6 +14,7 @@ while True:
     cv2.imshow("test", frame)
 
     k = cv2.waitKey(1)
+    print("Not threading")
     if k%256 == 27:
         # ESC pressed
         print("Escape hit, closing...")

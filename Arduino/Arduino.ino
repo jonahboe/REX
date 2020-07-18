@@ -35,7 +35,7 @@ bool isTrackOn = false;
 void setup() {
   Serial.begin(9600);
   delay(500);
-  Serial.write('s');
+  Serial.write("s");
 
   motorStop();
 
@@ -47,15 +47,18 @@ void loop() {
   if (Serial.available())
   {
     Data = Serial.read();
-    delay(200);
-    Serial.write(0x55);
-    delay(200);
+    if (Data >= 'a' && Data <= 'f')
+    {
+      delay(200);
+      Serial.write("s");
+      delay(200);
+    }
   }
   else
-    Data = 0;
+    Data = 'a';
 
   // No ball was found
-  if(Data == 0)
+  if(Data == 'a')
   {
     spL = NORMAL_SPD;
     spR = NORMAL_SPD;
@@ -63,11 +66,11 @@ void loop() {
   // Ball found (left to right is mapped to 1-5 respectivly)
   else
   {
-    spL = NORMAL_SPD + (Data > 3) * TURN_OFFSET 
-                     + (Data > 4) * TURN_OFFSET;
+    spL = NORMAL_SPD + (Data > 'd') * TURN_OFFSET 
+                     + (Data > 'e') * TURN_OFFSET;
     
-    spR = NORMAL_SPD + (Data < 3) * TURN_OFFSET 
-                     + (Data < 2) * TURN_OFFSET;
+    spR = NORMAL_SPD + (Data < 'd') * TURN_OFFSET 
+                     + (Data < 'c') * TURN_OFFSET;
 
     if (!isTrackOn)
     {
